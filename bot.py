@@ -5,7 +5,7 @@ import threading
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = "8742026471:AAGEMMK-tHljN-NzPpIBxDi6pbcDrBKWn2w"
+TOKEN = "8742026471:AAFl2Treu1W5mwDN8C6T6SzC51AJnnlTvXY"
 CHANNEL_USERNAME = "@Alijoychannel"
 
 # 1. تشغيل سيرفر الويب الوهمي لإرضاء Render ومنع Port Timeout
