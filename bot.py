@@ -1,21 +1,18 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import threading
 import os
 import yt_dlp
+from flask import Flask, request
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = "8742026471:AAGEMMK-tHljN-NzPpIBxDi6pbcDrBKWn2w"
 CHANNEL_USERNAME = "@Alijoychannel"
 
-# --- إرضاء منصة Render بفتح بورت وهمي ---
-def run_server():
-    port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(('0.0.0.0', port), BaseHTTPRequestHandler)
-    server.serve_forever()
+# استخدام Flask لإنشاء خدمة الويب المطلوبة لمنصة Render بدقة
+server = Flask(__name__)
 
-threading.Thread(target=run_server, daemon=True).start()
-# ----------------------------------------
+@server.route('/')
+def index():
+    return "Bot is running!"
 
 async def check_subscription(user_id, context):
     try:
@@ -86,13 +83,24 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception as e:
         await update.message.reply_text("❌ حدث خطا أثناء تحميل الفيديو، تأكد من صحة الرابط.")
 
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
+async def main():
+    application = Application.builder().token(TOKEN).build()
     
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_download))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_download))
 
-    app.run_polling()
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
 
 if __name__ == '__main__':
-    main()
+    import asyncio
+    import threading
+
+    # تشغيل بوت تليجرام في خلفية الأحداث
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())
+
+    # تشغيل سيرفر Flask لإرضاء Render على البورت الصحيح
+    port = int(os.environ.get("PORT", 10000))
+    server.run(host="0.0.0.0", port=port)
