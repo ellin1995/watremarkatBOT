@@ -1,18 +1,27 @@
 import os
 import yt_dlp
-from flask import Flask, request
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = "8742026471:AAGEMMK-tHljN-NzPpIBxDi6pbcDrBKWn2w"
 CHANNEL_USERNAME = "@Alijoychannel"
 
-# استخدام Flask لإنشاء خدمة الويب المطلوبة لمنصة Render بدقة
-server = Flask(__name__)
+# 1. تشغيل سيرفر الويب الوهمي لإرضاء Render ومنع Port Timeout
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive and running!")
 
-@server.route('/')
-def index():
-    return "Bot is running!"
+def run_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
+# تشغيل السيرفر في الخلفية فوراً
+threading.Thread(target=run_server, daemon=True).start()
 
 async def check_subscription(user_id, context):
     try:
@@ -29,6 +38,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("عذراً! يجب عليك الاشتراك في القناة أولاً لاستخدام البوت.", reply_markup=reply_markup)
         return
 
+    # إنشاء قائمة الأزرار السفلية (Menu)
     main_menu = [
         [KeyboardButton("📱 TikTok"), KeyboardButton("📸 Instagram")],
         [KeyboardButton("📘 Facebook"), KeyboardButton("🔴 YouTube")]
@@ -50,6 +60,7 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
 
     text = update.message.text
 
+    # إذا اختار المستخدم المنصة من الأزرار السفلية
     if text in ["📱 TikTok", "📸 Instagram", "📘 Facebook", "🔴 YouTube"]:
         platform = text.split(" ")[1]
         await update.message.reply_text(
@@ -61,8 +72,9 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
         )
         return
 
+    # إذا أرسل رابطاً حقيقياً
     if not text.startswith("http"):
-        await update.message.reply_text("⚠️ أرجو إرسال رابط صحيح يبدأ بـ http أو اختيار المنصة من الأزرار.")
+        await update.message.reply_text("⚠️ أرجو إرسال رابط صحيح يبدأ بـ http أو اختيار المنصة من الأزرار السفلية.")
         return
 
     await update.message.reply_text("⏳ جاري جلب الفيديو بدون علامة مائية، انتظر قليلاً...")
@@ -83,24 +95,14 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception as e:
         await update.message.reply_text("❌ حدث خطا أثناء تحميل الفيديو، تأكد من صحة الرابط.")
 
-async def main():
-    application = Application.builder().token(TOKEN).build()
+def main():
+    app = ApplicationBuilder().token(TOKEN).build()
     
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_download))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_download))
 
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
+    # تشغيل البوت بالطريقة القياسية المستقرة تماماً
+    app.run_polling()
 
 if __name__ == '__main__':
-    import asyncio
-    import threading
-
-    # تشغيل بوت تليجرام في خلفية الأحداث
-    loop = asyncio.get_event_loop()
-    loop.create_task(main())
-
-    # تشغيل سيرفر Flask لإرضاء Render على البورت الصحيح
-    port = int(os.environ.get("PORT", 10000))
-    server.run(host="0.0.0.0", port=port)
+    main()
