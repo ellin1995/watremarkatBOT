@@ -5,7 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import edge_tts
 
-TOKEN = os.environ.get("BOT_TOKEN") or "8846303152:AAEmzh1yC2WKIFC1SnEzQNtoqS8Rltk0jXk"
+TOKEN = os.environ.get("BOT_TOKEN") or "8846303152:AAGZfwwK5C9kFL_O1Ibncp5_cZ96Lb8xYWQ"
 CHANNEL_USERNAME = "@txttospeechali"
 
 class SimpleHandler(BaseHTTPRequestHandler):
@@ -19,7 +19,7 @@ def run_server():
     server = HTTPServer(('0.0.0.0', port), SimpleHandler)
     server.serve_forever()
 
-Threading.Thread(target=run_server, daemon=True).start()
+threading.Thread(target=run_server, daemon=True).start()
 
 async def check_subscription(user_id, context):
     try:
@@ -60,9 +60,10 @@ async def handle_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(output_file, 'rb') as audio:
             await update.message.reply_voice(voice=audio, caption="تم تحويل النص بنجاح ✨")
 
-        os.remove(output_file)
+        if os.path.exists(output_file):
+            os.remove(output_file)
     except Exception as e:
-        await update.message.reply_text("حدث خطا أثناء تحويل النص إلى صوت، حاول مجدداً ❌")
+        await update.message.reply_text("حدث خطأ أثناء تحويل النص إلى صوت، حاول مجدداً ❌")
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
