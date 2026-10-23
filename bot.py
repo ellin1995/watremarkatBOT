@@ -1,26 +1,25 @@
 import os
-import yt_dlp
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+import edge_tts
 
-# جلب التوكن حصرياً من إعدادات البيئة في Render
-TOKEN = os.environ.get("BOT_TOKEN")
+TOKEN = os.environ.get("BOT_TOKEN") or "8846303152:AAEmzh1yC2WKIFC1SnEzQNtoqS8Rltk0jXk"
 CHANNEL_USERNAME = "@txttospeechali"
 
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Bot is alive and running!")
+        self.wfile.write(b"TTS Bot is Running Successfully!")
 
 def run_server():
     port = int(os.environ.get("PORT", 10000))
     server = HTTPServer(('0.0.0.0', port), SimpleHandler)
     server.serve_forever()
 
-threading.Thread(target=run_server, daemon=True).start()
+Threading.Thread(target=run_server, daemon=True).start()
 
 async def check_subscription(user_id, context):
     try:
@@ -32,75 +31,43 @@ async def check_subscription(user_id, context):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_subscription(user_id, context):
-        keyboard = [[InlineKeyboardButton("الاشتراك في القناة أولاً 📢", url=f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}")]]
+        keyboard = [[InlineKeyboardButton("اشترك في القناة أولاً 📢", url=f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("عذراً! يجب عليك الاشتراك في القناة أولاً لاستخدام البوت.", reply_markup=reply_markup)
         return
 
-    main_menu = [
-        [KeyboardButton("📱 TikTok"), KeyboardButton("📸 Instagram")],
-        [KeyboardButton("📘 Facebook"), KeyboardButton("🔴 YouTube")]
-    ]
-    reply_markup = ReplyKeyboardMarkup(main_menu, resize_keyboard=True)
-
     await update.message.reply_text(
-        "مرحباً بك! 🎬 أرسل رابط الفيديو مباشرة، أو اختر المنصة من الأزرار بالأسفل لمعرفة كيفية التحميل السريع:",
-        reply_markup=reply_markup
+        "أهلاً بك في بوت تحويل النص إلى صوت! 🎙️\n\nأرسل لي أي نص باللغة العربية أو الإنجليزية وسأقوم بتحويله إلى رسالة صوتية بجودة عالية فوراً."
     )
 
-async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_subscription(user_id, context):
-        keyboard = [[InlineKeyboardButton("الاشتراك في القناة أولاً 📢", url=f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}")]]
+        keyboard = [[InlineKeyboardButton("اشترك في القناة أولاً 📢", url=f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("عذراً! يجب عليك الاشتراك في القناة أولاً لاستخدام البوت.", reply_markup=reply_markup)
         return
 
     text = update.message.text
-
-    if text in ["📱 TikTok", "📸 Instagram", "📘 Facebook", "🔴 YouTube"]:
-        platform = text.split(" ")[1]
-        await update.message.reply_text(
-            f"💡 **طريقة التحميل من {platform}:**\n\n"
-            f"1. افتح تطبيق {platform}.\n"
-            f"2. اضغط على زر **مشاركة (Share)** في الفيديو.\n"
-            f"3. اختر **Telegram** ثم اختر هذا البوت.\n"
-            f"4. سيتم إرسال الرابط وتحميل الفيديو بدون علامة مائية فوراً!"
-        )
-        return
-
-    if not text.startswith("http"):
-        await update.message.reply_text("⚠️ أرجو إرسال رابط صحيح يبدأ بـ http أو اختيار المنصة من الأزرار السفلية.")
-        return
-
-    await update.message.reply_text("⏳ جاري جلب الفيديو بدون علامة مائية، انتظر قليلاً...")
+    await update.message.reply_text("جارٍ تحويل النص إلى صوت... ⏳")
 
     try:
-        ydl_opts = {
-            'format': 'best',
-            'outtmpl': 'video.mp4',
-            'overwrites': True,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([text])
+        output_file = "voice.mp3"
+        voice = "ar-EG-SalmaNeural"
+        communicate = edge_tts.Communicate(text, voice)
+        await communicate.save(output_file)
 
-        with open('video.mp4', 'rb') as video_file:
-            await update.message.reply_video(video=video_file)
+        with open(output_file, 'rb') as audio:
+            await update.message.reply_voice(voice=audio, caption="تم تحويل النص بنجاح ✨")
 
-        os.remove('video.mp4')
+        os.remove(output_file)
     except Exception as e:
-        await update.message.reply_text("❌ حدث خطا أثناء تحميل الفيديو، تأكد من صحة الرابط.")
+        await update.message.reply_text("حدث خطا أثناء تحويل النص إلى صوت، حاول مجدداً ❌")
 
 def main():
-    if not TOKEN:
-        print("Error: BOT_TOKEN environment variable not set!")
-        return
-
     app = ApplicationBuilder().token(TOKEN).build()
-    
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_download))
-
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_tts))
     app.run_polling()
 
 if __name__ == '__main__':
