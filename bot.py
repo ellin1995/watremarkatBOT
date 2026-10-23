@@ -8,6 +8,15 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 TOKEN = "8742026471:AAGEMMK-tHljN-NzPpIBxDi6pbcDrBKWn2w"
 CHANNEL_USERNAME = "@Alijoychannel"
 
+# --- إرضاء منصة Render بفتح بورت وهمي ---
+def run_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(('0.0.0.0', port), BaseHTTPRequestHandler)
+    server.serve_forever()
+
+threading.Thread(target=run_server, daemon=True).start()
+# ----------------------------------------
+
 async def check_subscription(user_id, context):
     try:
         member = await context.bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
@@ -77,23 +86,13 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception as e:
         await update.message.reply_text("❌ حدث خطا أثناء تحميل الفيديو، تأكد من صحة الرابط.")
 
-if __name__ == '__main__':
+def main():
     app = ApplicationBuilder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_download))
 
-    class SimpleHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"Bot is alive!")
-
-    def run_server():
-        port = int(os.environ.get("PORT", 10000))
-        server = HTTPServer(('0.0.0.0', port), SimpleHandler)
-        server.serve_forever()
-
-    threading.Thread(target=run_server, daemon=True).start()
-
     app.run_polling()
+
+if __name__ == '__main__':
+    main()
