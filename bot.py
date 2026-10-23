@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKe
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = "8742026471:AAGEMMK-tHljN-NzPpIBxDi6pbcDrBKWn2w"
-CHANNEL_USERNAME = "@Alijoychannel" # معرف قناتك الجديد
+CHANNEL_USERNAME = "@Alijoychannel"
 
 async def check_subscription(user_id, context):
     try:
@@ -23,7 +23,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("عذراً! يجب عليك الاشتراك في القناة أولاً لاستخدام البوت.", reply_markup=reply_markup)
         return
 
-    # إنشاء قائمة الأزرار السفلية (Menu)
     main_menu = [
         [KeyboardButton("📱 TikTok"), KeyboardButton("📸 Instagram")],
         [KeyboardButton("📘 Facebook"), KeyboardButton("🔴 YouTube")]
@@ -45,7 +44,6 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
 
     text = update.message.text
 
-    # التحقق إذا ضغط المستخدم على أزرار القائمة
     if text in ["📱 TikTok", "📸 Instagram", "📘 Facebook", "🔴 YouTube"]:
         platform = text.split(" ")[1]
         await update.message.reply_text(
@@ -57,7 +55,6 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
         )
         return
 
-    # إذا أرسل المستخدم رابطاً حقيقياً
     if not text.startswith("http"):
         await update.message.reply_text("⚠️ أرجو إرسال رابط صحيح يبدأ بـ http أو اختيار المنصة من الأزرار.")
         return
@@ -86,7 +83,6 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_download))
 
-    # --- سيرفر وهمي لإرضاء منصة Render ومنع مشكلة Port Timeout ---
     class SimpleHandler(BaseHTTPRequestHandler):
         def do_GET(self):
             self.send_response(200)
