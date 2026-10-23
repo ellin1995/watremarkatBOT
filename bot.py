@@ -7,7 +7,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 # جلب التوكن حصرياً من إعدادات البيئة في Render
 TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_USERNAME = "@Alijoychannel"
+CHANNEL_USERNAME = "@txttospeechali"
 
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
