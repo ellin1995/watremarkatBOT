@@ -5,7 +5,7 @@ import yt_dlp
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = "8742026471:AAGEMUK-tHljN-NzPpIBxDl6pbcDrBKWn2w"
+TOKEN = "8742026471:AAGEMMK-tHljN-NzPpIBxDi6pbcDrBKWn2w"
 CHANNEL_USERNAME = "@Alijoychannel" # معرف قناتك الجديد
 
 async def check_subscription(user_id, context):
