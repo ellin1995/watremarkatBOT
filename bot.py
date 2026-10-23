@@ -5,10 +5,10 @@ import threading
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = "8742026471:AAFl2Treu1W5mwDN8C6T6SzC51AJnnlTvXY"
+# جلب التوكن حصرياً من إعدادات البيئة في Render
+TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_USERNAME = "@Alijoychannel"
 
-# 1. تشغيل سيرفر الويب الوهمي لإرضاء Render ومنع Port Timeout
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -20,7 +20,6 @@ def run_server():
     server = HTTPServer(('0.0.0.0', port), SimpleHandler)
     server.serve_forever()
 
-# تشغيل السيرفر في الخلفية فوراً
 threading.Thread(target=run_server, daemon=True).start()
 
 async def check_subscription(user_id, context):
@@ -38,7 +37,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("عذراً! يجب عليك الاشتراك في القناة أولاً لاستخدام البوت.", reply_markup=reply_markup)
         return
 
-    # إنشاء قائمة الأزرار السفلية (Menu)
     main_menu = [
         [KeyboardButton("📱 TikTok"), KeyboardButton("📸 Instagram")],
         [KeyboardButton("📘 Facebook"), KeyboardButton("🔴 YouTube")]
@@ -60,7 +58,6 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
 
     text = update.message.text
 
-    # إذا اختار المستخدم المنصة من الأزرار السفلية
     if text in ["📱 TikTok", "📸 Instagram", "📘 Facebook", "🔴 YouTube"]:
         platform = text.split(" ")[1]
         await update.message.reply_text(
@@ -72,7 +69,6 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
         )
         return
 
-    # إذا أرسل رابطاً حقيقياً
     if not text.startswith("http"):
         await update.message.reply_text("⚠️ أرجو إرسال رابط صحيح يبدأ بـ http أو اختيار المنصة من الأزرار السفلية.")
         return
@@ -96,12 +92,15 @@ async def handle_video_download(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("❌ حدث خطا أثناء تحميل الفيديو، تأكد من صحة الرابط.")
 
 def main():
+    if not TOKEN:
+        print("Error: BOT_TOKEN environment variable not set!")
+        return
+
     app = ApplicationBuilder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_video_download))
 
-    # تشغيل البوت بالطريقة القياسية المستقرة تماماً
     app.run_polling()
 
 if __name__ == '__main__':
